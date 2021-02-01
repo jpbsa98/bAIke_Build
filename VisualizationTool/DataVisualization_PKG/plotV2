@@ -1,0 +1,86 @@
+# -*- coding: utf-8 -*-
+from pyqtgraph.Qt import QtGui, QtCore
+import numpy as np
+from numpy import arange, sin, cos, pi
+import pyqtgraph as pg
+import sys
+
+import time
+
+from DataLoader import DataLoader 
+
+class Plot2D():
+    def __init__(self,graph):
+        self.traces = dict()
+
+        #QtGui.QApplication.setGraphicsSystem('raster')
+        self.app = QtGui.QApplication([])
+
+
+
+    def start(self):
+        if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+            QtGui.QApplication.instance().exec_()
+
+
+## Start Qt event loop unless running in interactive mode or using pyside.
+
+
+
+class graphic():
+
+    def __init__(self):
+        self.traces = dict()
+
+        self.win = pg.GraphicsWindow(title="Basic plotting examples")
+
+        self.win.setBackground("w")
+
+        self.win.resize(1000,600)
+
+        self.win.setWindowTitle('pyqtgraph example: Plotting')
+
+        pg.setConfigOptions(antialias=True)
+
+        self.canvas = self.win.addPlot(title="Pytelemetry")
+        
+    def trace(self,name,dataset_x,dataset_y,color):
+        if name in self.traces:
+            self.traces[name].setData(dataset_x,dataset_y)
+        else:
+            self.traces[name] = self.canvas.plot(pen=color)
+
+
+if __name__ == '__main__':
+    
+    p = graphic()
+    pl =Plot2D(p)
+    i=0
+
+    data = DataLoader()
+    length = data.df.shape[0]
+    # x index 0 , y index 1 , z index 2
+    acc = np.zeros(shape=(length,3))
+    print(acc.shape)
+    gyro = np.zeros(shape=(length,3))
+    x_lable =  np.arange(0,length,1)
+    gyroInfo_np=data.df[['master_acc_x','master_acc_y','master_acc_z']].to_numpy()
+    def update():
+        global p, i
+        x,y,z = gyroInfo_np[i]
+        acc[i][0]=x
+        acc[i][1]=y
+        acc[i][2]=z
+        p.trace("acc_x",x_lable,acc[:,0],(255,0,0))
+        p.trace("acc_y",x_lable,acc[:,1],(0,255,0))
+        p.trace("acc_z",x_lable,acc[:,2],(0,0,255))
+        i += 1
+
+    
+    while 1 == 1:
+        time.sleep(1)
+        print("i leep")
+        update() 
+
+
+    pl.start()

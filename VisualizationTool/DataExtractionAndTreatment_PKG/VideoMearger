@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+import os
+import re
+import cv2
+import numpy as np
+os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
+from moviepy.editor import VideoFileClip, concatenate_videoclips
+from tqdm import tqdm 
+
+REGEX_NUMBERS=f'(\d+)\..*'
+EXTENTION_FROM=".h264"
+EXTENTION_TO=".mp4"
+compiled = re.compile(REGEX_NUMBERS)
+FOLDER_OF_SEPAREATED_FILMS="/home/mrflint/Documents/projects/bAIke/DataExtractionAndTreatment_PKG/rund_dec_8/Videos/"# Folder to extract
+CACHE_FOLDER="cacheStorage_used_by_class_VideoMearger/"
+
+
+class VideoTreater:
+    def __init__(self,folder):
+        self.folder=folder
+        self.idFiles=[]
+        self.editedFilesInCache=[]
+        self.files=self.getAllFiles()
+        self.MergeVideos()
+    def getAllFiles(self):
+        self.listOfFiles= list(os.popen('ls '+self.folder))
+        for file_ in self.listOfFiles:
+                file_id = int(re.findall(REGEX_NUMBERS,file_)[0])
+                self.idFiles=self.idFiles+[file_id]
+
+        self.idFiles = sorted(self.idFiles)
+
+        for standAloanFile in self.idFiles:
+            fileFrom = self.folder+str(standAloanFile)+EXTENTION_FROM
+            fileTo = CACHE_FOLDER+str(standAloanFile)+EXTENTION_TO
+            self.ConvertFormat(fileFrom,fileTo)
+            
+
+        
+    #Function to convert from h264 to mp4
+    def ConvertFormat(self, fileForm, fileTo):
+        cap = cv2.VideoCapture(fileForm)
+        out = cv2.VideoWriter(fileTo, cv2.VideoWriter_fourcc('M','J', 'P','G'),24, (480, 640))
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if ret:
+                # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                n_frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                out.write(n_frame)
+            else:
+                break
+        self.editedFilesInCache=self.editedFilesInCache+[fileTo]
+        print('done'+'='*5+fileTo)
+        cap.release()
+        out.release()
+
+    #This function will act on treated videos and their directory so always assume the videos in the correct folder
+    def MergeVideos(self):
+        #pass
+        print("startMerage")
+        listOfClips = []
+        for clip_ in  self.editedFilesInCache:
+            clip = VideoFileClip(clip_)
+            listOfClips=listOfClips+[clip]
+        
+        film = concatenate_videoclips(listOfClips)
+        film.write_videofile(FOLDER_OF_SEPAREATED_FILMS+"joinedVideo.mp4")
+
+
+v = VideoTreater(FOLDER_OF_SEPAREATED_FILMS)

@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import cv2
+
+
+X = 640
+Y = 480
+CENTER_X=int(640/2)
+
+
+
+LEFT_LINE = np.array([[CENTER_X-110 , Y], [CENTER_X-6 , Y-220+11]], np.int32)
+
+RIGTH_LINE = np.array([[CENTER_X+110 , Y], [CENTER_X+6 , Y-220+11]], np.int32)
+
+
+DCAY_1_M_Y=67
+DCAY_1_M_X=110
+ONE_METER_RIGTH=[CENTER_X-DCAY_1_M_X,Y]
+ONE_METER_LEFT=[CENTER_X+DCAY_1_M_X,Y]
+
+
+DCAY_2_M_Y=67
+DCAY_2_M_X=77
+TWO_METERS_LEFT=[CENTER_X -DCAY_2_M_X , Y-DCAY_2_M_Y]
+TWO_METERS_RIGTH=[CENTER_X +DCAY_2_M_X , Y-DCAY_2_M_Y]
+
+DCAY_3_M_Y=DCAY_2_M_Y+50
+DCAY_3_M_X=50
+TREE_METERS_LEFT=[CENTER_X-DCAY_3_M_X , Y-DCAY_3_M_Y]
+TREE_METERS_RIGTH=[CENTER_X+DCAY_3_M_X , Y-DCAY_3_M_Y]
+
+
+M2M=(CENTER_X+64 +20,Y-66)
+M3M=(CENTER_X+41 +20,Y-50-66)
+M4M=(CENTER_X+22+20,Y-39-50-66)
+M5M=(CENTER_X+10  +20,Y-30-39-50-66)
+M6M=(CENTER_X+2 +20,Y-24-30-39-50-66)
+
+
+ONE_METER_LINE=np.array([[CENTER_X-64 , Y-66], [CENTER_X+64 , Y-66]], np.int32) #64
+TWO_METER_LINE=np.array([[CENTER_X-41 , Y-50-66], [CENTER_X+41 , Y-50-66]], np.int32) #50
+THRE_METER_LINE=np.array([[CENTER_X-22 , Y-39-50-66], [CENTER_X+22 , Y-39-50-66]], np.int32) #39
+FOUR_METER_LINE=np.array([[CENTER_X-10 , Y-30-39-50-66], [CENTER_X+10 , Y-30-39-50-66]], np.int32) #30
+FIVE_METER_LINE=np.array([[CENTER_X-2 , Y-24-30-39-50-66], [CENTER_X+2 , Y-24-30-39-50-66]], np.int32) #30
+
+
+ONE_METER_LINE = ONE_METER_LINE.reshape((-1, 1, 2))
+TWO_METER_LINE = TWO_METER_LINE.reshape((-1, 1, 2))
+THRE_METER_LINE = THRE_METER_LINE.reshape((-1, 1, 2))
+FOUR_METER_LINE = FOUR_METER_LINE.reshape((-1, 1, 2))
+FIVE_METER_LINE = FIVE_METER_LINE.reshape((-1, 1, 2))
+
+LEFT_LINE = LEFT_LINE.reshape((-1, 1, 2))
+RIGTH_LINE=RIGTH_LINE.reshape((-1, 1, 2))
+
+LEFT_LINE = LEFT_LINE.reshape((-1, 1, 2))
+RIGTH_LINE=RIGTH_LINE.reshape((-1, 1, 2))
+
+font = cv2.FONT_HERSHEY_SIMPLEX
+thickness = 1
+isClosed = True
+
+def linenesDrawer(_frame):
+
+    fontScale_meters_info=0.4
+    cv2.putText(_frame,'2M', M2M, font, fontScale_meters_info, (0, 0, 255), 1, cv2.LINE_AA)
+    cv2.putText(_frame,'3M', M3M, font, fontScale_meters_info, (0, 0, 255), 1, cv2.LINE_AA)
+    cv2.putText(_frame,'4M', M4M, font, fontScale_meters_info, (0, 128, 255), 1, cv2.LINE_AA)
+    cv2.putText(_frame,'5M', M5M, font, fontScale_meters_info, (255, 0, 0), 1, cv2.LINE_AA)
+    cv2.putText(_frame,'6M', M6M, font, fontScale_meters_info, (255, 0, 0), 1, cv2.LINE_AA)
+    
+
+    cv2.polylines(_frame, [FOUR_METER_LINE,FIVE_METER_LINE], isClosed,color,2)
+    cv2.polylines(_frame, [LEFT_LINE,RIGTH_LINE], isClosed,(0, 255, 255),3)
+    cv2.polylines(_frame, [ONE_METER_LINE,TWO_METER_LINE],isClosed ,(0, 0, 255),2)
+    cv2.polylines(_frame, [THRE_METER_LINE], isClosed,(0, 128, 255),2)
+    
+
+    return _frame

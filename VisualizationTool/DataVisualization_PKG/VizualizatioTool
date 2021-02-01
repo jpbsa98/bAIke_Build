@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+
+import pandas as pd
+import numpy as np
+import re
+import seaborn as sns
+import matplotlib.pyplot as plt
+import cv2
+import time
+from moviepy.video.io.bindings import mplfig_to_npimage
+import matplotlib.image as mpimg
+
+FRAME_DO_GRAFICO_PARADO=1050
+FRAME_DO_VIDEO_PARADO=1330
+LEITURAS_POR_SEG_SENSORES = 24 
+LEITURAS_POR_SEG_CAMERA=24
+PERDA=(FRAME_DO_VIDEO_PARADO-FRAME_DO_GRAFICO_PARADO) 
+
+
+X = 640
+Y = 480
+CENTER_X=int(640/2)
+
+DCAY_1_M_Y=67
+DCAY_1_M_X=110
+ONE_METER_RIGTH=[CENTER_X-DCAY_1_M_X,Y]
+ONE_METER_LEFT=[CENTER_X+DCAY_1_M_X,Y]
+
+
+DCAY_2_M_Y=67
+DCAY_2_M_X=77
+TWO_METERS_LEFT=[CENTER_X -DCAY_2_M_X , Y-DCAY_2_M_Y]
+TWO_METERS_RIGTH=[CENTER_X +DCAY_2_M_X , Y-DCAY_2_M_Y]
+
+DCAY_3_M_Y=DCAY_2_M_Y+50
+DCAY_3_M_X=50
+TREE_METERS_LEFT=[CENTER_X-DCAY_3_M_X , Y-DCAY_3_M_Y]
+TREE_METERS_RIGTH=[CENTER_X+DCAY_3_M_X , Y-DCAY_3_M_Y]
+
+
+thickness = 1
+isClosed = True
+# Blue color in BGR 
+color = (255, 0, 0) 
+# Create some points
+
+
+LEFT_LINE = np.array([[CENTER_X-110 , Y], [CENTER_X-6 , Y-220+11]], np.int32)
+
+RIGTH_LINE = np.array([[CENTER_X+110 , Y], [CENTER_X+6 , Y-220+11]], np.int32)
+
+
+M2M=(CENTER_X+64 +20,Y-66)
+M3M=(CENTER_X+41 +20,Y-50-66)
+M4M=(CENTER_X+22+20,Y-39-50-66)
+M5M=(CENTER_X+10  +20,Y-30-39-50-66)
+M6M=(CENTER_X+2 +20,Y-24-30-39-50-66)
+
+
+ONE_METER_LINE=np.array([[CENTER_X-64 , Y-66], [CENTER_X+64 , Y-66]], np.int32) #64
+TWO_METER_LINE=np.array([[CENTER_X-41 , Y-50-66], [CENTER_X+41 , Y-50-66]], np.int32) #50
+THRE_METER_LINE=np.array([[CENTER_X-22 , Y-39-50-66], [CENTER_X+22 , Y-39-50-66]], np.int32) #39
+FOUR_METER_LINE=np.array([[CENTER_X-10 , Y-30-39-50-66], [CENTER_X+10 , Y-30-39-50-66]], np.int32) #30
+FIVE_METER_LINE=np.array([[CENTER_X-2 , Y-24-30-39-50-66], [CENTER_X+2 , Y-24-30-39-50-66]], np.int32) #30
+
+
+ONE_METER_LINE = ONE_METER_LINE.reshape((-1, 1, 2))
+TWO_METER_LINE = TWO_METER_LINE.reshape((-1, 1, 2))
+THRE_METER_LINE = THRE_METER_LINE.reshape((-1, 1, 2))
+FOUR_METER_LINE = FOUR_METER_LINE.reshape((-1, 1, 2))
+FIVE_METER_LINE = FIVE_METER_LINE.reshape((-1, 1, 2))
+
+LEFT_LINE = LEFT_LINE.reshape((-1, 1, 2))
+RIGTH_LINE=RIGTH_LINE.reshape((-1, 1, 2))
+
+LEFT_LINE = LEFT_LINE.reshape((-1, 1, 2))
+RIGTH_LINE=RIGTH_LINE.reshape((-1, 1, 2))
+
+
+# load the data
+class Data():
+    def __init__(self):
+        self.loadData()
+        self.TreatData()
+        #self.Plot_Acceleration()
+    def loadData(self):
+        headers=['master_acc_x', 'master_acc_y', 'master_acc_z', 'master_gyro_x', 'master_gyro_y', 'master_gyro_z', 'slave_acc_x', 'slave_acc_y', 'slave_acc_z', 'slave_gyro_x', 'slave_gyro_y', 'slave_gyro_z', 'mag_x', 'mag_y', 'mag_z', 'master_temp', 'slave_temp']
+        self.df = pd.read_csv('extracteData.csv')
+
+    def TreatData(self):
+        regularExpression=re.compile("slave*")
+        columns_to_remove = list(filter(regularExpression.match,self.df.columns))
+        self.df=self.df.drop(columns=columns_to_remove)
+        n_cols=self.df.shape[1]
+
+        df_temp= pd.DataFrame(data=np.zeros(shape=(PERDA,n_cols)),columns=self.df.columns)
+        print(df_temp.head())
+        pandas_dfs=[df_temp,self.df]
+        self.df=pd.concat(pandas_dfs,ignore_index=True)
+        
+        
+    def Plot_Acceleration(self):
+        fig = plt.figure(figsize = (25,15))
+        sns.lineplot(data = self.df['master_acc_x'],linewidth = 1.5)
+        sns.lineplot(data = self.df['master_acc_z'],linewidth = 1.5)
+        sns.lineplot(data = self.df['master_acc_y'],linewidth = 1.5)
+data = Data()
+
+
+path_video='joinedVideo.mp4'
+cap = cv2.VideoCapture(path_video)
+ret, frame = cap.read()
+print(frame)
+h,w,_ = frame.shape
+
+count=0
+val=[]
+
+
+df_np = data.df
+
+
+fig, ax = plt.subplots(2,figsize=(15,8), facecolor='w')
+
+X=data.df.loc[:0,'master_acc_x']
+Z=data.df.loc[:0,'master_acc_z']
+Y=data.df.loc[:0,'master_acc_y']
+
+line1, = ax[0].plot(X, lw=1,label='master_acc_x')
+line2, = ax[0].plot(Z, lw=1,label='master_acc_z')
+line3, = ax[0].plot(Y, lw=1,label='master_acc_y')
+ax[0].legend(handles=[line1, line2,line3])
+ax[0].set_ylim([-5, 5])
+ax[0].set_xlim([0, 8000])
+
+#fig2, ax2 = plt.subplots(figsize=(10,5), facecolor='w')
+X1=data.df.loc[:0,'master_gyro_x']
+Z1=data.df.loc[:0,'master_gyro_z']
+Y1=data.df.loc[:0,'master_gyro_y']
+lineX, = ax[1].plot(X1, lw=1,label='master_gyro_x')
+lineZ, = ax[1].plot(Z1, lw=1,label='master_gyro_z')
+lineY, = ax[1].plot(Y1, lw=1,label='master_gyro_y')
+ax[1].legend(handles=[lineX, lineZ,lineY])
+ax[1].set_ylim([-100, 100])
+ax[1].set_xlim([0, 8000])
+
+#CALCULAR QUANDO DE DEVE ATUALIZAR O GRAFICO
+total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+total_dados=len(data.df)
+atualizar=total_frames/total_dados
+atualizar=1
+
+
+
+# used to record the time when we processed last frame 
+prev_frame_time = 0
+# used to record the time at which we processed current frame 
+new_frame_time = 0
+
+
+
+
+c=0
+while(True):
+    ret, frame = cap.read()
+
+    
+    #frame = frame[1] 
+    if frame is None:
+        break
+    if (count%int(atualizar) == 0):
+        # update data
+        X=data.df.loc[:c,'master_acc_x']
+        Z=data.df.loc[:c,'master_acc_z']
+        Y=data.df.loc[:c,'master_acc_y']
+        
+        line1.set_xdata(val)
+        line2.set_xdata(val)
+        line3.set_xdata(val)
+
+        line1.set_ydata(X)
+        line2.set_ydata(Z)
+        line3.set_ydata(Y)
+        
+        
+        # update data
+        X1=data.df.loc[:c,'master_gyro_x']
+        Z1=data.df.loc[:c,'master_gyro_z']
+        Y1=data.df.loc[:c,'master_gyro_y']
+        #print(X1)
+        lineX.set_xdata(val)
+        lineZ.set_xdata(val)
+        lineY.set_xdata(val)
+
+        lineX.set_ydata(X1)
+        lineZ.set_ydata(Z1)
+        lineY.set_ydata(Y1)
+        
+        val.append(c)
+        c+=1
+    grafico = mplfig_to_npimage(fig)
+    #gyro = mplfig_to_npimage(fig2)
+    print(frame.shape)
+    frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    
+    #FPS
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    fontScale = 0.7
+    new_frame_time = time.time()
+    fps = 1/(new_frame_time-prev_frame_time) 
+    prev_frame_time = new_frame_time
+    
+    cv2.putText(frame,'FPS: '+ str(int(fps))+" frame ="+str(c), (0, 30), font, fontScale, (0, 255, 0), 3, cv2.LINE_AA)
+    cv2.putText(grafico,"Frame ="+str(c), (0, 30), font, fontScale, (0, 255, 0), 3, cv2.LINE_AA)
+
+    """
+    ONE_METER_LINE = ONE_METER_LINE.reshape((-1, 1, 2))
+    TWO_METER_LINE = TWO_METER_LINE.reshape((-1, 1, 2))
+    THRE_METER_LINE = THRE_METER_LINE.reshape((-1, 1, 2))
+    FOUR_METER_LINE 
+    """
+
+    #(255, 0, 0) 
+    
+    fontScale_meters_info=0.4
+    cv2.putText(frame,'2M', M2M, font, fontScale_meters_info, (0, 0, 255), 1, cv2.LINE_AA)
+    cv2.putText(frame,'3M', M3M, font, fontScale_meters_info, (0, 0, 255), 1, cv2.LINE_AA)
+    cv2.putText(frame,'4M', M4M, font, fontScale_meters_info, (0, 128, 255), 1, cv2.LINE_AA)
+    cv2.putText(frame,'5M', M5M, font, fontScale_meters_info, color, 1, cv2.LINE_AA)
+    cv2.putText(frame,'6M', M6M, font, fontScale_meters_info, color, 1, cv2.LINE_AA)
+    
+
+    cv2.polylines(frame, [FOUR_METER_LINE,FIVE_METER_LINE], isClosed,color,2)
+    cv2.polylines(frame, [LEFT_LINE,RIGTH_LINE], isClosed,(0, 255, 255),3)
+    cv2.polylines(frame, [ONE_METER_LINE,TWO_METER_LINE],isClosed ,(0, 0, 255),2)
+    cv2.polylines(frame, [THRE_METER_LINE], isClosed,(0, 128, 255),2)
+    
+
+
+
+
+
+
+
+    #print(fps)
+    #frame1 = np.pad(frame, (500, 1000, 3), 0)   
+    #frame1 =np.zeros((500, 1000, 3))
+    #shape = np.shape(an_array)
+    #frame1[:480,:640,:3] = frame
+    #print("frame ",frame.shape)
+    #print("frame ",grafico.shape)
+    
+    """
+    an_array = np.array([[1, 2], [3, 4]])
+    shape = np.shape(an_array)
+    padded_array = np.zeros((3, 3))
+    padded_array[:shape[0],:shape[1]] = an_array
+    print(padded_array)
+    """
+    #frame (480,640,3)
+    #grafico ()
+
+    #img_concate_Hori=np.concatenate((frame1,grafico),axis=1)
+    #cv2.imshow('concatenated_Hori',img_concate_Hori)
+    cv2.imshow('Grafico', grafico)
+    #cv2.imshow('Gyro',gyro)
+    cv2.imshow('Video',frame)
+    #print(count)
+    count=count+1
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()

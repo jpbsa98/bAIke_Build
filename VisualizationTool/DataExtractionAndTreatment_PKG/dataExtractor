@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+import re
+import numpy as np
+import pandas as pd
+
+REGEX_FOR_GPS=r'latitude:(.*|.*\s.*),longitude:(.*|.*\s.*),time_utc:(.*|.*\s.*),altitude:(.*|.*\s.*),eps:(.*|.*\s.*)epx:(.*|.*\s.*),epv:(.*|.*\s.*),ept:(.*|.*\s.*),speed_\(m/s\):(.*|.*\s.*),climb:(.*|.*\s.*)\}'# regex for GPS sensor
+REGEX_FOR_MPU=f'([-+]?\d*\.\d+|\d+),?'*17+'\n' # regex for MPU sensor
+
+HEADER_FOR_GPS=['latitude','longitude','time_utc','altitude','eps','epx','epv','ept','speed_(m/s)','climb'] # Header for GPS sensor
+HEADER_FOR_MPU=['master_acc_x', 'master_acc_y', 'master_acc_z', 'master_gyro_x', 'master_gyro_y', 'master_gyro_z', 'slave_acc_x', 'slave_acc_y', 'slave_acc_z', 'slave_gyro_x', 'slave_gyro_y', 'slave_gyro_z', 'mag_x', 'mag_y', 'mag_z', 'master_temp', 'slave_temp'] # Header for MPU sensor
+
+FILENAME_GPS="sample-gps.txt" # Filename of GPS
+FILENAME_MPU="sample-mpu.csv" # Filename of MPU
+
+
+DATA_REGEX_FORMAT=f"^ ?(\d\d\d\d-\d\d-\d\d)T(\d\d:\d\d:\d\d)\.\d\d\dZ.*" #data format from files 2020-11-29T12:02:42.000Z + 2020-11-29T12:02:42.000Z
+
+REPOSITORY_PATH="/home/mrflint/Documents/projects/bAIke/DataExtractionAndTreatment_PKG/rund_dec_8/" # Path tho folder
+
+
+INDEX_OF_HEADER_BY_DEFAULT = 0 # index of headers inside tupules inside fileToTreat
+INDEX_OF_REGEX_BY_DEFAULT = 1 # index of regex inside tupules inside fileToTreat
+
+
+class DataExtractor:
+
+    def __init__(self):
+        self.REGEX_FOR_GPS=REGEX_FOR_GPS
+        self.REGEX_FOR_MPU=REGEX_FOR_MPU
+        self.HEADER_FOR_GPS=HEADER_FOR_GPS
+        self.HEADER_FOR_MPU=HEADER_FOR_MPU
+    
+    def treatment(self,filesToTreat):
+        self.filesToTreat=filesToTreat
+        self.cleanedData=self.loadData()
+        self.cleanedData.to_csv(REPOSITORY_PATH+'extracteData.csv', index=False)  
+
+    
+    def loadData(self):
+        treatedDatasets=[]
+        for k, v in self.filesToTreat.items():
+            text_in_file_in_this_iteration =  open(k, "r").read()
+            file_submmited_to_regex=re.findall(v[INDEX_OF_REGEX_BY_DEFAULT],text_in_file_in_this_iteration)
+            matrixOfValues=[]
+            for regex_line in file_submmited_to_regex:
+                matrixOfValues = matrixOfValues + self.treatRegexLine(regex_line)
+            matrixOfValues=pd.DataFrame(np.asarray(matrixOfValues),columns = v[INDEX_OF_HEADER_BY_DEFAULT])
+            treatedDatasets=treatedDatasets+[matrixOfValues]
+        return pd.concat(treatedDatasets, axis=1, sort=False)
+
+    def treatRegexLine(self,lineArray):
+            lineComposition = []
+            for cell in lineArray:
+                findNumber=re.findall('.*\d.*',cell)
+                if len(findNumber)>0:
+                    findData=re.findall(DATA_REGEX_FORMAT,cell)
+                    if len(findData)>0:
+                        cellFormat = findData[0][0]+' '+findData[0][1]
+                    else:
+                        valesExtracted = re.findall(f'(-?\d+.?\d+|-?\d+)',cell)[0]
+                        if len(valesExtracted)<1:
+                            cellFormat=re.findall(f'\D*(-?\d+.?\d+|-?\d+)\D*',cell)[0]
+                        else:
+                            cellFormat=valesExtracted
+                else:
+                    cellFormat=-1
+                lineComposition=lineComposition+[cellFormat]
+            return [lineComposition]
+
+
+def main():
+    d=DataExtractor()
+    filesToTreat = {REPOSITORY_PATH+FILENAME_GPS : (HEADER_FOR_GPS,REGEX_FOR_GPS), REPOSITORY_PATH+FILENAME_MPU: (HEADER_FOR_MPU,REGEX_FOR_MPU)} # map of files with heir header and regex to extract data
+    d.treatment(filesToTreat)
+
+if __name__ == "__main__":
+    main()
