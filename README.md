@@ -7,6 +7,7 @@
 ### Tiago Miguel Cunha silva PG41100  
 
 
-- Para correr a aplicação em tempo real na bicicleta todas as intruções estão no relatório, incluindo software e dependencias. Todo o código está em raspCode  
-- Para a aplicação de visualização de dados é preciso intalar todas as dependencias descitas no ficheiro "bAIke_Build/VisualizationTool/dependencias.txt"  
-- Para executar as diversas opções de visualização é necessário ir a "bAIke_Build/VisualizationTool/DataVisualization_PKG/" e correr os ficheiros "VizualizatioTool" ou "yolov4_inference.py"
+- Para correr a aplicação em tempo real na bicicleta todas as intruções estão no relatório, incluindo software e dependencias. [Código](https://github.com/jpbsa98/bAIke_Build/tree/master/raspCode/scripts)  
+- [Dependências para a visualização dos dados](https://github.com/jpbsa98/bAIke_Build/blob/master/VisualizationTool/dependencias.txt)  
+- Para visualizar os dados correr o ficheiro ["VizualizatioTool"](https://github.com/jpbsa98/bAIke_Build/blob/master/VisualizationTool/DataVisualization_PKG/VizualizatioTool) ou ["yolov4_inference.py"](https://github.com/jpbsa98/bAIke_Build/blob/master/VisualizationTool/DataVisualization_PKG/yolov4_inference.py)
+
